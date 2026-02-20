@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const multer = require("multer");
-const cors = require("cors"); // ✅ Agregado para permitir conexión con el HTML
+const cors = require("cors");
 const { v2: cloudinary } = require("cloudinary");
 
 const app = express();
@@ -21,10 +21,24 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// 🔹 CONECTAR MONGO
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("✅ Mongo conectado correctamente"))
-    .catch(err => console.error("❌ Error de conexión:", err));
+// 🔹 CONECTAR MONGO - VERSIÓN MEJORADA
+const mongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+if (!mongoURI) {
+    console.error("❌ ERROR CRÍTICO: No se encontró MONGO_URI en las variables de entorno");
+    console.error("📌 Debes configurar MONGO_URI en Render (Environment)");
+    process.exit(1); // Detiene la app si no hay URI
+}
+
+mongoose.connect(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+    .then(() => console.log("✅ MongoDB conectado correctamente"))
+    .catch(err => {
+        console.error("❌ Error de conexión a MongoDB:", err.message);
+        process.exit(1);
+    });
 
 // 🔹 MODELO (Asegúrate que la carpeta sea 'models' y el archivo 'Productos.js')
 const Producto = require("./models/Productos");
@@ -77,5 +91,21 @@ app.delete("/api/productos/:id", async (req, res) => {
     }
 });
 
+// Ruta de prueba para verificar que la API funciona
+app.get("/", (req, res) => {
+    res.json({ 
+        message: "API de Tienda Online funcionando",
+        status: "OK",
+        endpoints: {
+            productos: "/api/productos",
+            crear: "POST /api/productos",
+            eliminar: "DELETE /api/productos/:id"
+        }
+    });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(`📡 URL: https://tienda-online-zapatos.onrender.com`);
+});
