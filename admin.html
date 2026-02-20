@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Ps Online</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
+        button { background: #2f8ae6; color: white; border: none; cursor: pointer; }
+        .producto-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; }
+        img { width: 50px; height: 50px; object-fit: cover; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Panel de Administración</h2>
+        <form id="form-admin">
+            <input type="text" id="nombre" placeholder="Nombre del producto" required>
+            <input type="number" id="precio" placeholder="Precio" required>
+            <input type="file" id="imagen" accept="image/*" required>
+            <select id="categoria">
+                <option value="Hombres">Hombres</option>
+                <option value="Damas">Damas</option>
+            </select>
+            <input type="text" id="talla" placeholder="Talla (ej: 38-42)">
+            <button type="submit" id="btn-enviar">Guardar Producto</button>
+        </form>
+
+        <h3>Lista de Productos</h3>
+        <div id="lista-productos"></div>
+    </div>
+
+    <script>
+        const API = "http://localhost:3000/api/productos";
+
+        async function cargar() {
+            const res = await fetch(API);
+            const productos = await res.json();
+            const lista = document.getElementById("lista-productos");
+            lista.innerHTML = productos.map(p => `
+                <div class="producto-item">
+                    <img src="${p.imagen}">
+                    <span>${p.nombre} - $${p.precio}</span>
+                    <button style="width:auto; background:red" onclick="eliminar('${p._id}')">X</button>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById("form-admin").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("btn-enviar");
+            btn.disabled = true;
+            btn.innerText = "Subiendo...";
+
+            const formData = new FormData();
+            formData.append("nombre", document.getElementById("nombre").value);
+            formData.append("precio", document.getElementById("precio").value);
+            formData.append("categoria", document.getElementById("categoria").value);
+            formData.append("talla", document.getElementById("talla").value);
+            formData.append("imagen", document.getElementById("imagen").files[0]);
+
+            try {
+                const res = await fetch(API, { method: "POST", body: formData });
+                if (res.ok) {
+                    alert("¡Producto agregado!");
+                    e.target.reset();
+                    cargar();
+                }
+            } catch (err) { alert("Error al conectar"); }
+            finally { btn.disabled = false; btn.innerText = "Guardar Producto"; }
+        });
+
+        async function eliminar(id) {
+            if (confirm("¿Eliminar?")) {
+                await fetch(`${API}/${id}`, { method: "DELETE" });
+                cargar();
+            }
+        }
+        cargar();
+    </script>
+</body>
+</html>
