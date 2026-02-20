@@ -7,11 +7,11 @@ const { v2: cloudinary } = require("cloudinary");
 
 const app = express();
 
-// ✅ MIDDLEWARES
+// MIDDLEWARES
 app.use(cors()); 
 app.use(express.json());
 
-// ✅ CONFIGURAR CLOUDINARY
+// CONFIGURAR CLOUDINARY
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.CLOUD_API_KEY,
@@ -21,29 +21,25 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// 🔹 CONECTAR MONGO - VERSIÓN MEJORADA
+// 🔹 CONECTAR MONGO - CORREGIDO (sin opciones obsoletas)
 const mongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 if (!mongoURI) {
-    console.error("❌ ERROR CRÍTICO: No se encontró MONGO_URI en las variables de entorno");
-    console.error("📌 Debes configurar MONGO_URI en Render (Environment)");
-    process.exit(1); // Detiene la app si no hay URI
+    console.error("❌ ERROR CRÍTICO: No se encontró MONGO_URI");
+    process.exit(1);
 }
 
-mongoose.connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
+mongoose.connect(mongoURI)
     .then(() => console.log("✅ MongoDB conectado correctamente"))
     .catch(err => {
         console.error("❌ Error de conexión a MongoDB:", err.message);
         process.exit(1);
     });
 
-// 🔹 MODELO (Asegúrate que la carpeta sea 'models' y el archivo 'Productos.js')
+// MODELO
 const Producto = require("./models/Productos");
 
-// 🔹 RUTA POST: AGREGAR PRODUCTO
+// RUTAS
 app.post("/api/productos", upload.single("imagen"), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: "No se subió ninguna imagen" });
@@ -71,7 +67,6 @@ app.post("/api/productos", upload.single("imagen"), async (req, res) => {
     }
 });
 
-// 🔹 RUTA GET: OBTENER TODOS
 app.get("/api/productos", async (req, res) => {
     try {
         const productos = await Producto.find().sort({ creadoEn: -1 });
@@ -81,7 +76,6 @@ app.get("/api/productos", async (req, res) => {
     }
 });
 
-// 🔹 RUTA DELETE: ELIMINAR
 app.delete("/api/productos/:id", async (req, res) => {
     try {
         await Producto.findByIdAndDelete(req.params.id);
@@ -91,7 +85,7 @@ app.delete("/api/productos/:id", async (req, res) => {
     }
 });
 
-// Ruta de prueba para verificar que la API funciona
+// Ruta de prueba
 app.get("/", (req, res) => {
     res.json({ 
         message: "API de Tienda Online funcionando",
